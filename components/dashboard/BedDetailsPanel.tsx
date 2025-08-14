@@ -12,6 +12,7 @@ import {
   MdMap,
   MdInsertDriveFile,
 } from 'react-icons/md'
+import { BsFiletypeXlsx } from "react-icons/bs";
 import PlyViewer from '@/components/ply/PlyViewer'
 import BedMiniMap from '@/components/bed/BedMiniMap'
 
@@ -230,7 +231,7 @@ export default function BedDetailsPanel({
                 onClick={() => onCollectRoverData(bed.id)}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-teal-500 px-4 py-2 mt-3 text-sm font-medium text-white shadow hover:bg-teal-600"
               >
-                <MdOutlineSensors className="h-5 w-5" />
+                <BsFiletypeXlsx className="h-5 w-5" />
                 Download XLSX Report
               </button>
 
