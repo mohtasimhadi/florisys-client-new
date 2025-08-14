@@ -10,7 +10,7 @@ export default function Page() {
       <aside className="w-[320px] shrink-0 border-r border-zinc-800/80 bg-zinc-950/60">
         <PlotSidebar />
       </aside>
-      <section className="flex-1 min-w-0">
+      <section className="relative flex-1 min-w-0">
         <div className="h-full">
           <MapViewer />
         </div>
