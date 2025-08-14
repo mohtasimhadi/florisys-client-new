@@ -1,16 +1,17 @@
 // types/bed.ts
 export type SpatialMap = {
   id: string
-  fileName: string
-  filePath?: string
-  date: string
+  fileName: string               // original filename
+  filename?: string              // stored filename on server (if provided)
+  url?: string                   // absolute URL (if server provides)
+  date: string                   // ISO timestamp
 }
 
 export type Bed = {
   id: string
   name: string
-  coordinates: [number, number][][] // GeoJSON Polygon ring(s) in EPSG:4326
+  coordinates: [number, number][][]
   createdAt?: string
   updatedAt?: string
-  spatialMaps?: SpatialMap[] // ✅ Added
+  spatialMaps?: SpatialMap[]     // ✅ include maps
 }

@@ -1,5 +1,6 @@
+// components/dashboard/MapViewer/index.tsx
 'use client'
-import { MdOutlineMap } from 'react-icons/md'
+
 import { useCallback, useMemo, useState } from 'react'
 import Map from 'ol/Map'
 import OlHost from '@/components/map/OlHost'
@@ -10,6 +11,7 @@ import Spinner from '@/components/ui/Spinner'
 import BedToolbar from '@/components/dashboard/BedToolbar'
 import BedDetailsPanel from '@/components/dashboard/BedDetailsPanel'
 import ConfirmShapeModal from '@/components/dashboard/ConfirmShapeModal'
+import { useSettings } from '@/lib/settingsStore'
 
 export default function MapViewer() {
   const { plots, selectedId } = usePlotStore()
@@ -19,13 +21,17 @@ export default function MapViewer() {
   const onReady = useCallback((m: Map) => setMap(m), [])
 
   const { loading, ready, viewCode } = useRaster(map, plot)
-  const beds = useBeds(map, plot, { ready, viewCode })
+
+  const { dashboardBaseUrl } = useSettings()
+  const apiBase = (dashboardBaseUrl || 'http://localhost:8000').replace(/\/$/, '')
+
+  const beds = useBeds(map, plot, { ready, viewCode, apiBase })
 
   return (
     <div className="relative h-full w-full bg-gray-800">
       <BedToolbar
         adding={beds.mode === 'adding'}
-        onToggleAdd={() => beds.mode === 'adding' ? beds.cancelAdd() : beds.startAdd()}
+        onToggleAdd={() => (beds.mode === 'adding' ? beds.cancelAdd() : beds.startAdd())}
         editingName={beds.editingName}
         onCancelEdit={beds.cancelEdit}
         disabled={!plot}
@@ -34,17 +40,13 @@ export default function MapViewer() {
       {!plot && (
         <div className="absolute inset-0 z-10 grid place-items-center p-6">
           <div className="flex flex-col items-center gap-4 rounded-2xl bg-gradient-to-br from-sky-50 via-cyan-50 to-teal-50 px-8 py-12 shadow-lg border border-sky-200">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-sky-100 shadow-inner">
-              <MdOutlineMap className="w-8 h-8 text-sky-600" />
-            </div>
             <h2 className="text-lg font-semibold text-slate-700">No plot selected</h2>
             <p className="text-sm text-slate-500 text-center max-w-xs">
-              Select a plot from the sidebar to start exploring. Your selected plot will be displayed here with its beds and details.
+              Select a plot from the sidebar to start.
             </p>
           </div>
         </div>
       )}
-
 
       <OlHost onReady={onReady} />
 
@@ -57,40 +59,38 @@ export default function MapViewer() {
         </div>
       )}
 
-{beds.selected && (
-<BedDetailsPanel
-  bed={beds.selected}
-  onClose={() => beds.setSelected(null)}
-  onStartEdit={() => beds.startEdit(beds.selected!)}
-  onDelete={(id) => beds.removeBed(id)}
-  onUploadSpatialMap={(id, file) => {
-    const fd = new FormData()
-    fd.append("file", file)
-    fetch(`/beds/${id}/spatial-maps`, {
-      method: "POST",
-      body: fd,
-    }).then(() => {
-      beds.reloadSelected() // add this method to refresh bed maps
-    })
-  }}
-  onCollectRoverData={(id) => {
-    fetch(`/beds/${id}/collect-data`, { method: "POST" })
-      .then((res) => res.json())
-      .then((json) => alert(json.message))
-  }}
-/>
-
-)}
-
+      {beds.selected && plot && (
+        <BedDetailsPanel
+          bed={beds.selected}
+          apiBase={apiBase}
+          onClose={() => beds.setSelected(null)}
+          onStartEdit={() => beds.startEdit(beds.selected!.id)}
+          onDelete={(id) => beds.removeBed(id)}
+          onUploadSpatialMap={async (bedId, file) => {
+            const fd = new FormData()
+            fd.append('file', file)
+            const res = await fetch(`${apiBase}/plots/${plot.id}/beds/${bedId}/spatial-maps`, {
+              method: 'POST',
+              body: fd,
+            })
+            if (!res.ok) throw new Error('Upload failed')
+            await beds.reloadSelected()
+          }}
+          onCollectRoverData={async (bedId) => {
+            const res = await fetch(`${apiBase}/plots/${plot.id}/beds/${bedId}/collect-rover-data`, {
+              method: 'POST',
+            })
+            if (!res.ok) throw new Error('Rover trigger failed')
+          }}
+        />
+      )}
 
       {beds.pending && (
         <ConfirmShapeModal
           kind={beds.pending.kind}
           ringLL={beds.pending.ringLL}
           onCancel={beds.pending.kind === 'add' ? beds.cancelAdd : beds.cancelEdit}
-          onSave={beds.pending.kind === 'add'
-            ? (name?: string) => beds.saveAdd(name!)
-            : () => beds.saveEdit()}
+          onSave={beds.pending.kind === 'add' ? (name?: string) => beds.saveAdd(name!) : () => beds.saveEdit()}
         />
       )}
     </div>
