@@ -283,13 +283,26 @@ export function useBeds(
     buildOverlays()
   }
 
+  const reloadSelected = async () => {
+  if (!selected) return;
+  try {
+    const res = await fetch(`/beds/${selected.id}`)
+    if (!res.ok) throw new Error("Failed to reload bed")
+    const updated = await res.json()
+    setSelected(updated)
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+
   return {
     // state
     selected,
     mode,
     pending,         // null | { kind:'add'|'edit', ringLL, ... }
     editingName,
-    // actions
+    reloadSelected,
     setSelected,
     startAdd,
     cancelAdd,
@@ -300,3 +313,4 @@ export function useBeds(
     removeBed,
   }
 }
+

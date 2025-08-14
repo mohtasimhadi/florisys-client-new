@@ -57,14 +57,31 @@ export default function MapViewer() {
         </div>
       )}
 
-      {beds.selected && (
-        <BedDetailsPanel
-          bed={beds.selected}
-          onClose={() => beds.setSelected(null)}
-          onStartEdit={() => beds.startEdit(beds.selected!)}
-          onDelete={(id) => beds.removeBed(id)}
-        />
-      )}
+{beds.selected && (
+<BedDetailsPanel
+  bed={beds.selected}
+  onClose={() => beds.setSelected(null)}
+  onStartEdit={() => beds.startEdit(beds.selected!)}
+  onDelete={(id) => beds.removeBed(id)}
+  onUploadSpatialMap={(id, file) => {
+    const fd = new FormData()
+    fd.append("file", file)
+    fetch(`/beds/${id}/spatial-maps`, {
+      method: "POST",
+      body: fd,
+    }).then(() => {
+      beds.reloadSelected() // add this method to refresh bed maps
+    })
+  }}
+  onCollectRoverData={(id) => {
+    fetch(`/beds/${id}/collect-data`, { method: "POST" })
+      .then((res) => res.json())
+      .then((json) => alert(json.message))
+  }}
+/>
+
+)}
+
 
       {beds.pending && (
         <ConfirmShapeModal
