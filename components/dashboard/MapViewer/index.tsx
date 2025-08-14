@@ -41,7 +41,7 @@ export default function MapViewer() {
         <div className="absolute inset-0 z-10 grid place-items-center p-6">
           <div className="flex flex-col items-center gap-4 rounded-2xl bg-gradient-to-br from-sky-50 via-cyan-50 to-teal-50 px-8 py-12 shadow-lg border border-sky-200">
             <h2 className="text-lg font-semibold text-slate-700">No plot selected</h2>
-            <p className="text-sm text-slate-500 text-center max-w-xs">
+            <p className="max-w-xs text-center text-sm text-slate-500">
               Select a plot from the sidebar to start.
             </p>
           </div>
@@ -63,6 +63,7 @@ export default function MapViewer() {
         <BedDetailsPanel
           bed={beds.selected}
           apiBase={apiBase}
+          plotUrl={plot.url}        // ✅ pass GeoTIFF to the mini map
           onClose={() => beds.setSelected(null)}
           onStartEdit={() => beds.startEdit(beds.selected!.id)}
           onDelete={(id) => beds.removeBed(id)}
