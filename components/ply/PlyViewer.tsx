@@ -6,7 +6,7 @@ import * as THREE from 'three'
 
 export default function PlyViewer({ src }: { src: string }) {
   const hostRef = useRef<HTMLDivElement | null>(null)
-  const disposeRef = useRef<() => void>(() => {})
+  const disposeRef = useRef<() => void>(() => { })
 
   useEffect(() => {
     if (!hostRef.current) return
@@ -19,8 +19,8 @@ export default function PlyViewer({ src }: { src: string }) {
     const scene = new THREE.Scene()
     scene.background = new THREE.Color(0xffffff)
 
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.01, 1000)
-    camera.position.set(0.8, 0.8, 0.8)
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000)
+    camera.position.set(0.2, 0.2, 0.2)
 
     const renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setSize(width, height)
@@ -34,44 +34,50 @@ export default function PlyViewer({ src }: { src: string }) {
 
     // orbit controls (dynamic import)
     let controls: any
-    ;(async () => {
-      const [{ OrbitControls }, { PLYLoader }] = await Promise.all([
-        import('three/examples/jsm/controls/OrbitControls.js'),
-        import('three/examples/jsm/loaders/PLYLoader.js'),
-      ])
+      ; (async () => {
+        const [{ OrbitControls }, { PLYLoader }] = await Promise.all([
+          import('three/examples/jsm/controls/OrbitControls.js'),
+          import('three/examples/jsm/loaders/PLYLoader.js'),
+        ])
 
-      controls = new OrbitControls(camera, renderer.domElement)
+        controls = new OrbitControls(camera, renderer.domElement)
 
-      const loader = new PLYLoader()
-      loader.load(
-        src,
-        (geometry: any) => {
-          geometry.computeVertexNormals?.()
-          const material = new THREE.MeshStandardMaterial({ color: 0x4f46e5, metalness: 0.1, roughness: 0.9 })
-          const mesh = new THREE.Mesh(geometry, material)
-          scene.add(mesh)
+        const loader = new PLYLoader()
+        loader.load(
+          src,
+          (geometry: any) => {
+            geometry.computeVertexNormals?.()
 
-          // fit camera to geometry
-          geometry.computeBoundingBox?.()
-          const bb = geometry.boundingBox as THREE.Box3
-          if (bb) {
-            const size = new THREE.Vector3()
-            bb.getSize(size)
-            const center = new THREE.Vector3()
-            bb.getCenter(center)
-            mesh.position.sub(center)
-            const maxDim = Math.max(size.x, size.y, size.z)
-            const dist = maxDim * 1.8
-            camera.position.set(dist, dist, dist)
-            camera.lookAt(0, 0, 0)
+            const material = new THREE.PointsMaterial({
+              size: 0.002,         // adjust point size to taste
+              vertexColors: true,  // use original PLY colors
+            })
+
+            const points = new THREE.Points(geometry, material)
+            scene.add(points)
+
+            // fit camera to geometry
+            geometry.computeBoundingBox?.()
+            const bb = geometry.boundingBox as THREE.Box3
+            if (bb) {
+              const size = new THREE.Vector3()
+              bb.getSize(size)
+              const center = new THREE.Vector3()
+              bb.getCenter(center)
+              points.position.sub(center)
+              const maxDim = Math.max(size.x, size.y, size.z)
+              const dist = maxDim * .1
+              camera.position.set(dist, dist, dist)
+              camera.lookAt(0, 0, 0)
+            }
+          },
+          undefined,
+          () => {
+            // load error — keep scene empty
           }
-        },
-        undefined,
-        () => {
-          // load error — keep scene empty
-        }
-      )
-    })()
+        )
+
+      })()
 
     const ro = new ResizeObserver(() => {
       const w = host.clientWidth
